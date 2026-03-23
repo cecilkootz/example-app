@@ -1,0 +1,6 @@
+---
+- name: Deploy static hello world site behind nginx
+  hosts: web
+  become: true
+  roles:
+    - hello_site
