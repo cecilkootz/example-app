@@ -1,0 +1,61 @@
+---
+- name: Ensure apt cache is up to date
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Ensure site root exists
+  ansible.builtin.file:
+    path: /var/www/hello
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy static site
+  ansible.builtin.copy:
+    src: ../../../../site/index.html
+    dest: /var/www/hello/index.html
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install nginx site config
+  ansible.builtin.template:
+    src: hello.conf.j2
+    dest: /etc/nginx/sites-available/hello
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Validate nginx config
+    - Reload nginx
+
+- name: Enable nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/hello
+    dest: /etc/nginx/sites-enabled/hello
+    state: link
+    force: true
+  notify:
+    - Validate nginx config
+    - Reload nginx
+
+- name: Disable default nginx site if present
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify:
+    - Validate nginx config
+    - Reload nginx
+
+- name: Ensure nginx is enabled and started
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
